@@ -1,0 +1,88 @@
+---
+title: "Reproducible Research: Peer Assessment 1"
+output: 
+  html_document:
+    keep_md: true
+---
+```{r, echo=TRUE}}
+library(tidyverse)
+```
+
+
+
+## Loading and preprocessing the data
+```{r, echo=TRUE}
+activity <- read.csv("./activity.csv", header = T)
+
+```
+
+
+
+## What is mean total number of steps taken per day?
+
+```{r, echo=TRUE}
+daily <- activity %>%
+  group_by(date) %>%
+  summarise(total = sum(steps, na.rm = T))
+mean_daily <- mean(daily$total)
+hist(daily$total)
+mean(daily$total)
+median(daily$total)
+```
+
+
+## What is the average daily activity pattern?
+```{r, echo=TRUE}
+interval <- activity %>%
+  group_by(interval) %>%
+  summarise(avg_step = mean(steps, na.rm = T))
+
+plot(interval$interval, interval$avg_step, type = 'l')
+
+interval_max <- activity %>%
+  group_by(interval) %>%
+  summarise(Max = max(steps, na.rm = T))
+
+interval_max[interval_max[['Max']] == max(interval_max$Max),]
+
+```
+
+
+
+
+## Imputing missing values
+```{r, echo=TRUE}
+sum(is.na(activity$steps))
+
+activity_nafill <- activity %>%
+  group_by(date) %>%
+  mutate(steps = ifelse(is.na(steps), mean(steps, na.rm = T), steps)) %>%
+  ungroup() %>%
+  mutate(steps = ifelse(is.na(steps), mean(steps, na.rm = T), steps))
+
+daily_nafill <- activity_nafill %>%
+  group_by(date) %>%
+  summarise(total = sum(steps, na.rm = T))
+mean_daily_nafill <- mean(daily_nafill$total)
+hist(daily_nafill$total)
+mean(daily_nafill$total)
+median(daily_nafill$total)
+```
+
+
+## Are there differences in activity patterns between weekdays and weekends?
+```{r, echo = T}
+activity_wk <- activity_nafill %>%
+  mutate(Weekdays = 
+           ifelse(
+             weekdays((as.Date(date))) %in% c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday"), yes = "weekday", no = "weekend")) %>%
+  group_by(interval, Weekdays) %>%
+  summarise(avg_steps = mean(steps, na.rm = T))
+
+ggplot(activity_wk, aes(x = interval, y = avg_steps)) +
+  geom_line() +
+  facet_wrap(~Weekdays, ncol = 1)
+
+```
+
+
